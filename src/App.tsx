@@ -1,15 +1,18 @@
 import React, { useEffect, useRef } from "react";
+
+import { CanvasController } from "modules/CanvasController";
+import { loadImage } from "utils";
+
+import imgPath1 from "assets/images/1.jpg";
+import imgPath2 from "assets/images/2.png";
+
 import "./App.module.scss";
 
 export const App = () => {
   const canvasRef = useRef<HTMLCanvasElement>();
 
   useEffect(() => {
-    const canvas = canvasRef.current;
-
-    const ctx = canvas.getContext("2d");
-    ctx.fillStyle = "blue";
-    // ctx.fillRect(0, 0, canvas.width, canvas.height);
+    setupCanvas(canvasRef.current);
   }, []);
 
   return (
@@ -17,4 +20,16 @@ export const App = () => {
       <canvas ref={canvasRef} styleName="canvas" />
     </div>
   );
+};
+
+const setupCanvas = async (canvas) => {
+  const canv = new CanvasController({ canvas, activeItemBorderWidth: 2 });
+
+  const [image1, image2] = await Promise.all([
+    loadImage(imgPath1),
+    loadImage(imgPath2),
+  ]);
+
+  canv.drawImage(image1, { sizeRatio: 0.8 });
+  canv.drawImage(image2, { sizeRatio: 0.82 });
 };

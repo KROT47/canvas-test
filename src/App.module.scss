@@ -1,11 +1,13 @@
 $canvas-ratio: 16 / 9;
 
 .root {
+  position: relative;
   width: 100%;
   padding-bottom: 100% / $canvas-ratio;
 }
 
 .canvas {
+  position: absolute;
   width: 100%;
   height: 100%;
   background: azure;
