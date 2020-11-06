@@ -12,7 +12,7 @@ export class CanvasController {
   canvas: HTMLCanvasElement;
   activeItemBorderWidth: number = 2;
   ctx2d: CanvasRenderingContext2D;
-  items: Array<CanvasItem> = [];
+  items: Array<{ meta: {}; item: CanvasItem }> = [];
   lastMouseEvent: MouseEvent;
 
   constructor(config: ConfigType) {
@@ -37,7 +37,7 @@ export class CanvasController {
     this.canvas.width = width;
     this.canvas.height = height;
 
-    for (const item of this.items) item.recalculatePositionAndSize();
+    for (const { item } of this.items) item.recalculateRect();
   }
 
   get clientRect(): ClientRect {
@@ -45,7 +45,7 @@ export class CanvasController {
   }
 
   get activeItem(): CanvasItem {
-    return this.items[this.items.length - 1];
+    return this.items[this.items.length - 1]?.item;
   }
 
   onMouseDown = (event: MouseEvent) => {
@@ -97,7 +97,7 @@ export class CanvasController {
     const { items } = this;
 
     for (let i = items.length; i--; ) {
-      const item = items[i];
+      const { item } = items[i];
 
       if (item.existsAt(layerX, layerY)) return i;
     }
@@ -105,47 +105,72 @@ export class CanvasController {
     return -1;
   }
 
-  addCanvasItem(params: {
+  addCanvasItem({
+    renderItem,
+    rect,
+    meta,
+  }: {
     renderItem: CanvasItemRenderType;
-    x?: number;
-    y?: number;
-    w?: number;
-    h?: number;
+    rect?: {
+      x: number;
+      y: number;
+      w: number;
+      h: number;
+    };
+    meta: {
+      method: string;
+      args: Array<any>;
+    };
   }) {
     const item = new CanvasItem({
-      ...params,
       canvas: this.canvas,
       activeBorderWidth: this.activeItemBorderWidth,
+      renderItem,
+      rect,
     });
 
-    this.items.push(item);
+    this.items.push({ meta, item });
 
     item.render();
   }
 
   drawImage(image: HTMLImageElement, config?: DefaultConfigsType["drawImage"]) {
-    const { x, y, sizeRatio } = getConfig("drawImage", config);
+    const { x, y, w: baseW, h: baseH, sizeRatio } = getConfig(
+      "drawImage",
+      config
+    );
 
-    const { width: canvasWidth, height: canvasHeight } = this.canvas;
+    let w = baseW;
+    let h = baseH;
 
-    const imgWidth = image.naturalWidth;
-    const imgHeight = image.naturalHeight;
+    if (!w || !h) {
+      const { width: canvasWidth, height: canvasHeight } = this.canvas;
 
-    const wRatio = canvasWidth / imgWidth;
-    const hRatio = canvasHeight / imgHeight;
+      const imgWidth = image.naturalWidth;
+      const imgHeight = image.naturalHeight;
 
-    const minRatio = Math.min(wRatio, hRatio);
+      const wRatio = canvasWidth / imgWidth;
+      const hRatio = canvasHeight / imgHeight;
 
-    const multiplier = minRatio;
+      const minRatio = Math.min(wRatio, hRatio);
 
-    const w = imgWidth * multiplier * sizeRatio;
-    const h = imgHeight * multiplier * sizeRatio;
+      const multiplier = minRatio;
+
+      w = imgWidth * multiplier * sizeRatio;
+      h = imgHeight * multiplier * sizeRatio;
+    }
 
     this.addCanvasItem({
-      x,
-      y,
-      w,
-      h,
+      meta: {
+        method: "drawImage",
+        args: [...arguments],
+      },
+      rect: {
+        x,
+        y,
+        w,
+        h,
+      },
       renderItem: (x, y, w, h) => {
         this.ctx2d.drawImage(image, x, y, w, h);
       },
@@ -158,6 +183,6 @@ export class CanvasController {
 
   private _render() {
     this._clear();
-    for (const item of this.items) item.render();
+    for (const { item } of this.items) item.render();
   }
 }

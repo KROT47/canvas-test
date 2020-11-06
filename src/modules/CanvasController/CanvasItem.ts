@@ -9,10 +9,12 @@ export type CanvasItemConfigType = {
   canvas: HTMLCanvasElement;
   activeBorderWidth: number;
   renderItem: CanvasItemRenderType;
-  x?: number;
-  y?: number;
-  w?: number;
-  h?: number;
+  rect?: {
+    x: number;
+    y: number;
+    w: number;
+    h: number;
+  };
 };
 
 export class CanvasItem {
@@ -24,35 +26,39 @@ export class CanvasItem {
   renderItem: CanvasItemRenderType;
   isActive: boolean;
 
-  x = 0;
-  y = 0;
-  w = 0;
-  h = 0;
+  rect = {
+    x: 0,
+    y: 0,
+    w: 0,
+    h: 0,
+  };
 
   constructor(config: CanvasItemConfigType) {
     Object.assign(this, config);
 
     this.ctx2d = this.canvas.getContext("2d");
+
     this.canvasWidth = this.canvas.width;
     this.canvasHeight = this.canvas.height;
   }
 
-  recalculatePositionAndSize() {
+  recalculateRect() {
+    const { rect } = this;
+
     const xMultiplier = this.canvas.width / this.canvasWidth;
-    this.x *= xMultiplier;
-    this.w *= xMultiplier;
+    rect.x *= xMultiplier;
+    rect.w *= xMultiplier;
 
     const yMultiplier = this.canvas.height / this.canvasHeight;
-    this.y *= yMultiplier;
-    this.h *= yMultiplier;
+    rect.y *= yMultiplier;
+    rect.h *= yMultiplier;
 
     this.canvasWidth = this.canvas.width;
     this.canvasHeight = this.canvas.height;
   }
 
   existsAt(userX: number, userY: number): boolean {
-    const { x, y, w, h } = this;
-
+    const { x, y, w, h } = this.rect;
     return x <= userX && y <= userY && x + w >= userX && y + h >= userY;
   }
 
@@ -61,31 +67,37 @@ export class CanvasItem {
   }
 
   move(deltaX: number, deltaY: number) {
-    this.x += deltaX;
-    if (this.x < 0) this.x = 0;
-    if (this.x + this.w > this.canvas.width) {
-      this.x = this.canvas.width - this.w;
+    const { rect } = this;
+
+    rect.x += deltaX;
+    if (rect.x < 0) rect.x = 0;
+    if (rect.x + rect.w > this.canvas.width) {
+      rect.x = this.canvas.width - rect.w;
     }
 
-    this.y += deltaY;
-    if (this.y < 0) this.y = 0;
-    if (this.y + this.h > this.canvas.height) {
-      this.y = this.canvas.height - this.h;
+    rect.y += deltaY;
+    if (rect.y < 0) rect.y = 0;
+    if (rect.y + rect.h > this.canvas.height) {
+      rect.y = this.canvas.height - rect.h;
     }
   }
 
   render() {
+    const {
+      activeBorderWidth: deltaPx,
+      rect: { x, y, w, h },
+    } = this;
+
     if (this.isActive) {
-      const { activeBorderWidth: deltaPx } = this;
       this.ctx2d.fillStyle = "green";
       this.ctx2d.fillRect(
-        this.x - deltaPx,
-        this.y - deltaPx,
-        this.w + deltaPx * 2,
-        this.h + deltaPx * 2
+        x - deltaPx,
+        y - deltaPx,
+        w + deltaPx * 2,
+        h + deltaPx * 2
       );
     }
 
-    return this.renderItem(this.x, this.y, this.w, this.h);
+    return this.renderItem(x, y, w, h);
   }
 }
