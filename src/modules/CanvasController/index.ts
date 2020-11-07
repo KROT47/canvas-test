@@ -91,15 +91,12 @@ export class CanvasController {
   getMousedownItemIndex(event: MouseEvent): number {
     const { offsetX, offsetY } = event;
 
-    const layerX = offsetX - this.clientRect.left;
-    const layerY = offsetY - this.clientRect.top;
-
     const { items } = this;
 
     for (let i = items.length; i--; ) {
       const { item } = items[i];
 
-      if (item.existsAt(layerX, layerY)) return i;
+      if (item.existsAt(offsetX, offsetY)) return i;
     }
 
     return -1;
