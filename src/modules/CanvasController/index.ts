@@ -1,6 +1,6 @@
 import { debounce } from "utils";
 
-import { CanvasItem, CanvasItemRenderType } from "./CanvasItem";
+import { CanvasItem, CanvasItemRenderType, RectType } from "./CanvasItem";
 import { getConfig, DefaultConfigsType } from "./defaultConfigs";
 
 type ConfigType = {
@@ -14,6 +14,13 @@ export class CanvasController {
   ctx2d: CanvasRenderingContext2D;
   items: Array<{ meta: {}; item: CanvasItem }> = [];
   lastMouseEvent: MouseEvent;
+  history: Array<{
+    id: number;
+    rect: RectType;
+  }> = [];
+  itemsIndex: {
+    [id: string]: CanvasItem;
+  } = {};
 
   constructor(config: ConfigType) {
     Object.assign(this, config);
@@ -30,6 +37,20 @@ export class CanvasController {
     this.canvas.onmousedown = this.onMouseDown;
     this.canvas.onmouseup = this.onMouseUp;
     this.canvas.onmouseleave = this.onMouseLeave;
+
+    window.onkeydown = (event: KeyboardEvent) => {
+      if (event.key === "u" && event.ctrlKey) {
+        if (!this.history.length) return;
+
+        const { id, rect } = this.history.pop();
+
+        const item = this.itemsIndex[id];
+
+        item.rect = rect;
+
+        this._render();
+      }
+    };
   }
 
   private _init() {
@@ -60,6 +81,8 @@ export class CanvasController {
       this.canvas.addEventListener("mousemove", this.onMouseMove);
       this.lastMouseEvent = event;
       this.activeItem.setIsActive(true);
+
+      this.pushCanvasItemToHistory(item.item);
     }
 
     this._render();
@@ -78,6 +101,13 @@ export class CanvasController {
 
   onMouseUp = () => this.resetActiveItem();
   onMouseLeave = () => this.resetActiveItem();
+
+  pushCanvasItemToHistory(item: CanvasItem) {
+    this.history.push({
+      id: item.id,
+      rect: { ...item.rect },
+    });
+  }
 
   resetActiveItem() {
     if (this.lastMouseEvent) {
@@ -127,6 +157,8 @@ export class CanvasController {
     });
 
     this.items.push({ meta, item });
+
+    this.itemsIndex[item.id] = item;
 
     item.render();
   }

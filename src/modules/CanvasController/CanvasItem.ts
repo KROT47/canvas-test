@@ -5,17 +5,21 @@ export type CanvasItemRenderType = (
   h: number
 ) => void;
 
+export type RectType = {
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+};
+
 export type CanvasItemConfigType = {
   canvas: HTMLCanvasElement;
   activeBorderWidth: number;
   renderItem: CanvasItemRenderType;
-  rect?: {
-    x: number;
-    y: number;
-    w: number;
-    h: number;
-  };
+  rect?: RectType;
 };
+
+let UID = 1;
 
 export class CanvasItem {
   canvasWidth: number;
@@ -25,6 +29,8 @@ export class CanvasItem {
   ctx2d: CanvasRenderingContext2D;
   renderItem: CanvasItemRenderType;
   isActive: boolean;
+
+  id = UID++;
 
   rect = {
     x: 0,
